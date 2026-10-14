@@ -1,68 +1,327 @@
 # GRP Single-Model Dimensional Inspection
 
-This browser app loads one measured geometry file, displays the part, measures its overall extents, and checks drawing dimensions against a fixed ±0.05 mm acceptance band. It also has a two-click 3D point-to-point tool for a selected feature, such as the distance across a component or between two points on a slot.
+### 🚀 Live Demo
 
-The app does not make up models or measurements. It starts with blank drawing-value fields and no PASS/FAIL result. Measurements appear only after a real file is loaded. PASS/FAIL appears only for dimensions with a nominal value entered by the operator.
+**[Open GRP INSPECT 360](https://grpinspector.vercel.app/)**
 
-## Run locally
+A browser-based dimensional inspection application for measured GRP (Glass Reinforced Plastic) geometry. The application loads a single measured geometry file, displays the component in 3D, calculates overall dimensions, and checks entered drawing dimensions against a fixed ±0.05 mm acceptance band.
 
-The browser app uses ES modules and WebAssembly, so serve this folder over localhost instead of opening `index.html` directly.
+> **Important:** The application does not generate or invent models or measurements. Measurements are calculated only from the geometry file uploaded by the operator.
 
-1. Open PowerShell in this folder.
-2. Run `python -m http.server 8000`.
-3. Open `http://localhost:8000` in Chrome, Edge, or Firefox.
-4. Keep internet access available for the Three.js viewer and CAD importer dependencies loaded from jsDelivr.
+---
 
-## Operator workflow
+## 📌 Project Overview
 
-1. Load one **as-built measured model**. The file should be geometry captured from the actual part, such as a scan or metrology output. A nominal design CAD file only measures that design file; it does not prove what was manufactured.
-2. Select the units used by the mesh. STL and OBJ normally do not preserve reliable unit metadata. The STEP/IGES importer is asked to return coordinates in the selected unit. All displayed and checked dimensions are converted to millimetres.
-3. The app computes the model's axis-aligned X, Y, and Z extents in the uploaded file's coordinate system.
-4. Enter drawing nominal values for Length (X), Width (Y), and/or Height (Z). Blank fields are reported as measured only and do not get a pass/fail label.
-5. For a local feature dimension, enter a feature name and its nominal size, choose **POINT MEASURE**, then click two locations on the visible surface. The app computes the Euclidean distance between those two picked surface points.
-6. Each entered target is checked against `nominal - 0.05 mm` through `nominal + 0.05 mm`, inclusive. Export the computed table to CSV for the part record.
+GRP INSPECT 360 is a web-based dimensional inspection tool designed to support the inspection of large GRP components.
 
-For the example nominal length of 20 mm, the accepted band is 19.9500 mm to 20.0500 mm. The target itself is never prefilled as a measured result. The operator must enter the nominal from the drawing, then the model supplies the measured value.
+The application allows an operator to:
 
-## Supported geometry
+- Load a measured geometry file
+- Visualize the component in 3D
+- Calculate overall X, Y, and Z dimensions
+- Enter nominal drawing dimensions
+- Compare measured values against a ±0.05 mm tolerance
+- Measure the distance between two selected points on the model
+- Generate a CSV inspection record
 
-| File type | Behavior |
-| --- | --- |
-| STL | Binary or ASCII triangle mesh import |
-| OBJ | Polygon mesh import |
-| STEP / STP | Browser CAD import through OpenCascade WebAssembly, then display and bounding-box measurement |
-| IGES / IGS | Browser CAD import through OpenCascade WebAssembly, then display and bounding-box measurement |
-| DWG / IPT | Not decoded in the browser. Export to STEP or STL in CAD software first. |
+The system is intended as a **software-based geometry inspection interface** and does not replace calibrated metrology equipment.
 
-Each input is limited to 100 MB and 500,000 triangles to keep browser memory use bounded. STEP/IGES is tessellated for display. That tessellation and the source file's accuracy affect the values.
+---
 
-## How the measurements work
+## ⚙️ Key Features
 
-**Overall size:** the app computes a world-coordinate bounding box of the imported geometry and reports its X, Y, and Z spans in millimetres. These are axis-aligned extents, not feature recognition. If the model is rotated relative to its drawing axes, the extents may not correspond to drawing length/width/height; orient the model consistently before inspection.
+- 3D geometry visualization
+- Single-model inspection workflow
+- Overall X, Y and Z dimensional measurement
+- Two-point 3D distance measurement
+- ±0.05 mm acceptance band
+- Operator-entered nominal drawing values
+- PASS/FAIL evaluation
+- CSV inspection report generation
+- Unit selection and conversion to millimetres
+- Support for mesh and CAD geometry files
+- No fabricated measurements or automatic PASS/FAIL without nominal values
 
-**Selected feature:** point picking raycasts against the displayed triangulated surface. The measured value is the straight-line distance between the two hit locations. It is useful for simple distances, but it is not automatic hole/slot detection, circle fitting, true-position analysis, or a datum-based GD&T evaluation.
+---
 
-The CSV includes timestamp, model filename and format, unit interpretation, fixed tolerance, checked dimensions, measured and nominal values, deviation, acceptance interval, and per-dimension result. No CSV can be exported until a model has been measured.
+## 📂 Supported Geometry
 
-## Engineering limits
+| File Type | Support |
+|---|---|
+| STL | Binary and ASCII triangle mesh |
+| OBJ | Polygon mesh |
+| STEP / STP | Browser CAD import |
+| IGES / IGS | Browser CAD import |
+| DWG / IPT | Not directly supported; export to STEP or STL first |
 
-The challenge brief describes checking real GRP parts against a drawing and producing a traceable per-part GD&T record; it calls out hole and slot position/size, perpendicularity, and surface profile as important requirements. This app is a software geometry-measurement interface only. It does not include a scanner, camera, physical sensor, part fixturing, drawing/PDF dimension extraction, feature recognition, datum alignment, full GD&T calculations, uncertainty budget, calibration, traceability, or certification.
+### File Limits
 
-A result within ±0.05 mm only says the imported geometry's computed dimension is within that numeric band. It does **not** establish that the physical part is accurate to 50 microns. That depends on the measurement equipment, calibration, scanning procedure, GRP surface, data registration, and source mesh fidelity. Do not label this app certified or production-ready metrology without validating the full measurement chain.
+- Maximum file size: **100 MB**
+- Maximum triangles: **500,000**
 
-## Why there is no ML/ChatGPT result engine
+STEP and IGES models are tessellated for browser display, so the tessellation and source-file accuracy can affect measurements.
 
-ML is not needed for measuring a known distance or comparing a computed dimension with a numeric tolerance. The numerical result should be reproducible geometry arithmetic. AI can help an operator find fields or explain a report, but must not invent measurements, infer missing nominal dimensions, or choose PASS/FAIL. Drawing dimensions are entered by an operator in this version; they are not extracted from the PDF.
+---
 
-## Project files
+## 🔍 Operator Workflow
 
-- `index.html` — single-model workflow and interface.
-- `app.js` — supported CAD/mesh import, 3D display, actual geometry measurements, tolerance checks, and CSV output.
-- `styles.css` and `dimensional.css` — responsive interface styles.
+### 1. Load the measured model
 
-## Runtime libraries
+Upload an **as-built measured model** obtained from the actual manufactured component, such as scan or metrology output.
 
-- [Three.js](https://threejs.org/) for the 3D viewer and mesh file loaders.
-- [occt-import-js](https://github.com/kovacsv/occt-import-js) for STEP/IGES import in the browser.
+A nominal CAD design file only measures the design geometry; it does not prove the dimensions of the manufactured part.
 
-Dependencies load at runtime from jsDelivr. For offline or controlled deployments, review the licenses and self-host pinned library assets.
+### 2. Select units
+
+Select the units corresponding to the uploaded geometry.
+
+STL and OBJ files generally do not contain reliable unit metadata, so the operator must select the appropriate interpretation.
+
+### 3. Measure overall dimensions
+
+The application calculates the model's axis-aligned:
+
+- X extent
+- Y extent
+- Z extent
+
+All displayed values are converted to millimetres.
+
+### 4. Enter drawing dimensions
+
+The operator enters the nominal Length, Width and/or Height values from the engineering drawing.
+
+Blank fields are displayed as measured values only and are not assigned PASS/FAIL.
+
+### 5. Measure a selected feature
+
+For a local feature:
+
+1. Enter the feature name.
+2. Enter the nominal dimension.
+3. Select **POINT MEASURE**.
+4. Click two locations on the visible surface.
+5. The application calculates the Euclidean distance between the two selected points.
+
+### 6. Generate inspection record
+
+The measured values and inspection results can be exported as a CSV file.
+
+---
+
+## 📏 Tolerance Evaluation
+
+The application uses a fixed acceptance band of:
+
+**Nominal ± 0.05 mm**
+
+For example, for a nominal dimension of **20.00 mm**:
+
+```text
+Lower limit = 19.9500 mm
+Upper limit = 20.0500 mm
+```
+
+The measured value is evaluated against this range.
+
+The nominal value is **never automatically used as the measured value**. The operator must enter the drawing nominal, while the application calculates the measured value from the uploaded geometry.
+
+---
+
+## 📐 Measurement Method
+
+### Overall Dimensions
+
+The application calculates the world-coordinate bounding box of the imported geometry and reports the X, Y and Z spans.
+
+These are **axis-aligned extents**, not automatic feature recognition.
+
+If the model is rotated relative to the engineering drawing axes, the reported dimensions may not correspond to drawing Length, Width and Height.
+
+### Selected Feature Measurement
+
+The point measurement tool uses raycasting against the displayed triangulated surface.
+
+The measured value is the straight-line Euclidean distance between the two selected surface points.
+
+It is suitable for simple point-to-point measurements but does not perform:
+
+- Automatic hole detection
+- Slot recognition
+- Circle fitting
+- Datum alignment
+- True-position calculation
+- Full GD&T evaluation
+
+---
+
+## 📊 CSV Inspection Report
+
+The generated CSV record contains information such as:
+
+- Timestamp
+- Model filename
+- File format
+- Unit interpretation
+- Tolerance
+- Nominal dimension
+- Measured dimension
+- Deviation
+- Acceptance interval
+- PASS/FAIL result
+
+A CSV report cannot be generated until a model has been measured.
+
+---
+
+## 🛠️ Technologies Used
+
+- HTML
+- CSS
+- JavaScript
+- Three.js
+- WebAssembly
+- OpenCascade
+- occt-import-js
+- Vercel
+
+### Runtime Libraries
+
+**Three.js**  
+Used for 3D visualization and mesh file loading.
+
+**occt-import-js**  
+Used for STEP/IGES CAD import through OpenCascade WebAssembly.
+
+Dependencies are loaded at runtime through jsDelivr.
+
+---
+
+## 🌐 Deployment
+
+The application is deployed using Vercel.
+
+### Live Application
+
+**[https://grpinspector.vercel.app/](https://grpinspector.vercel.app/)**
+
+### Source Code
+
+**[GitHub Repository](https://github.com/skar89035-gif/GRP---INSPECT-360)**
+
+---
+
+## 💻 Run Locally
+
+The application uses ES modules and WebAssembly, so it should be served through a local HTTP server instead of opening `index.html` directly.
+
+### Step 1 — Open PowerShell
+
+Navigate to the project folder.
+
+### Step 2 — Start the local server
+
+```bash
+python -m http.server 8000
+```
+
+### Step 3 — Open the application
+
+Open:
+
+```text
+http://localhost:8000
+```
+
+Use Chrome, Edge or Firefox.
+
+Internet access is required for the Three.js viewer and CAD importer dependencies loaded from jsDelivr.
+
+---
+
+## 📁 Project Structure
+
+```text
+GRP---INSPECT-360/
+│
+├── index.html
+├── app.js
+├── styles.css
+├── dimensional.css
+└── README.md
+```
+
+---
+
+## ⚠️ Engineering Limitations
+
+The application is a **software geometry-measurement interface**.
+
+It does not currently include:
+
+- Physical scanner or camera
+- Physical measurement sensors
+- Part fixturing
+- Drawing/PDF dimension extraction
+- Automatic feature recognition
+- Datum alignment
+- Complete GD&T calculations
+- Uncertainty budget
+- Calibration management
+- Measurement traceability
+- Metrology certification
+
+A result within **±0.05 mm** only means that the computed geometry dimension falls within the specified numerical band.
+
+It does **not** establish that the physical GRP component is accurate to 50 microns.
+
+Physical accuracy depends on factors including:
+
+- Measurement equipment
+- Equipment calibration
+- Scanning procedure
+- GRP surface characteristics
+- Data registration
+- Source mesh accuracy
+- Measurement uncertainty
+
+Therefore, this application should not be described as certified or production-ready metrology without validation of the complete measurement chain.
+
+---
+
+## 🤖 Why There Is No AI/ML Measurement Engine?
+
+AI/ML is not required for calculating a known geometric distance or comparing that measurement against a numerical tolerance.
+
+The measurement result should be reproducible mathematical geometry.
+
+AI can potentially assist an operator with:
+
+- Finding fields
+- Explaining inspection reports
+- Guiding the inspection workflow
+
+However, AI should not:
+
+- Invent measurements
+- Infer missing nominal dimensions
+- Generate models
+- Automatically choose PASS/FAIL without valid measurement data
+
+In this version, drawing dimensions are entered by the operator and are not automatically extracted from PDFs.
+
+---
+
+## 🎯 Project Objective
+
+The objective of GRP INSPECT 360 is to provide a browser-based, traceable and transparent interface for dimensional inspection of measured GRP geometry while clearly separating:
+
+**Measured geometry → Nominal drawing value → Tolerance evaluation → Inspection result**
+
+---
+
+## 👥 Project
+
+**GRP INSPECT 360**
+
+Developed as a digital inspection and measurement solution for large GRP component dimensional assessment.
